@@ -1,0 +1,32 @@
+Script started on Sat Apr 20 10:56:51 2013
+$ make
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/include/ -I/home/nicolosi/devel/libdcrypt/include/  -c skgu_pki.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/include/ -I/home/nicolosi/devel/libdcrypt/include/  -c skgu_cert.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/include/ -I/home/nicolosi/devel/libdcrypt/include/ -c skgu_misc.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/include/ -I/home/nicolosi/devel/libdcrypt/include/ -c pv_misc.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -o skgu_pki skgu_pki.o skgu_cert.o skgu_misc.o pv_misc.o -L. -L/usr/lib/  -L/home/nicolosi/devel/libdcrypt/lib/ -ldcrypt  -lgmp
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -I. -I/usr/include/ -I/home/nicolosi/devel/libdcrypt/include/  -c skgu_nidh.c
+gcc -g -O2 -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror -o skgu_nidh skgu_nidh.o skgu_cert.o skgu_misc.o pv_misc.o -L. -L/usr/lib/  -L/home/nicolosi/devel/libdcrypt/lib/ -ldcrypt  -lgmp
+$ make cleanall
+rm -f core *.core *.o *~ 
+rm -rf al.* bo.* .pki *.b64
+$ make dotest
+./skgu_pki init
+./skgu_pki cert -g al.priv -o al.cert al.pub "al"
+./skgu_pki cert -g bo.priv -o bo.cert bo.pub "bo"
+./skgu_nidh al.priv al.cert "al" bo.pub bo.cert "bo" testlab
+Valid certificate
+ls testlab*
+testlab-al-bo.b64
+cat testlab-al-bo.b64
+jGHtZfehZAaSFfMS1WyV7JAPrvXcpRDc1aMcxcu7TRw=
+./skgu_nidh bo.priv bo.cert "bo" al.pub al.cert "al" testlab
+Valid certificate
+ls testlab*
+testlab-al-bo.b64  testlab-bo-al.b64
+cat testlab-bo-al.b64
+jGHtZfehZAaSFfMS1WyV7JAPrvXcpRDc1aMcxcu7TRw=
+diff testlab-al-bo.b64 testlab-bo-al.b64
+$ 
+
+Script done on Sat Apr 20 10:57:24 2013

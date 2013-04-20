@@ -8,6 +8,7 @@ void ri (void);
 char *import_from_file (int fd);
 char *import_sk_from_file (char **raw_sk_p, size_t *raw_len_p, int fdsk);
 int write_chunk (int fd, const char *buf, u_int len);
+void write_skfile (const char *skfname, void *raw_sk, size_t raw_sklen); /* from lab1 */
 
 #ifndef HAVE_GETPROGNAME
 # define MY_MAXNAME 80

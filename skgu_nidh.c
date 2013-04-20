@@ -84,11 +84,10 @@ nidh (dckey *priv, dckey *pub, char *priv_id, char *pub_id, char *label)
   rawpub rpub;
   rawpriv rpriv;
 
-  /* YOUR VARS HERE */
+  int res;/*, i;*/
 
   /* step 0: check that the private and public keys are compatible,
      i.e., they use the same group parameters */
-
   if ((-1 == get_rawpub (&rpub, pub)) 
       || (-1 == get_rawpriv (&rpriv, priv))) {
     printf ("%s: trouble importing GMP values from ElGamal-like keys\n",
@@ -114,9 +113,22 @@ nidh (dckey *priv, dckey *pub, char *priv_id, char *pub_id, char *label)
                 (use mpz_init, mpz_powm, mpz_clear; look at elgamal.c in 
                  the libdcrypt source directory for sample usage 
      */
-    
-    /* YOUR CODE HERE */
-    
+    char *dh_secret_str=0;
+    {
+      
+      mpz_t dh_secret_int;
+      mpz_init(dh_secret_int);
+      mpz_powm(dh_secret_int, rpub.y, rpriv.x, rpub.p); 
+      res = cat_mpz(&dh_secret_str, dh_secret_int); /* EC need 0; MALLOC */
+      mpz_clear(dh_secret_int);
+      if (res) {
+	free(dh_secret_str);
+	printf("error allocating memory\n");
+	exit(1);
+      }
+      /* printf("dh_secret_str: %s\n",dh_secret_str); */
+    }
+
     /* step 1b: order the IDs lexicographically */
     char *fst_id = NULL, *snd_id = NULL;
     
@@ -129,29 +141,77 @@ nidh (dckey *priv, dckey *pub, char *priv_id, char *pub_id, char *label)
     }    
     
     /* step 1c: hash DH secret and ordered id pair into a master key */
-    
-    /* YOUR CODE HERE */
+    char km[20];
+    {
+      sha1_ctx shactx;
+      sha1_init(&shactx);
+      sha1_update(&shactx, dh_secret_str, strlen(dh_secret_str));
+
+      char *id12;
+      size_t len1, len2;
+      len1 = strlen(fst_id); len2 = strlen(snd_id);
+      id12 = (char*)malloc(len1+len2+1); /* +1 for \0 */
+      strcpy(id12, fst_id);
+      strcat(id12, snd_id);
+      assert(strlen(id12) == len1+len2); 
+      sha1_update(&shactx, id12, len1+len2);
+      free(id12);
+      
+      sha1_final(&shactx, (void*)km); 	/* 20 byte master key at km */
+      /* printf("km: "); */
+      /* for (i=0; i<20; i++) */
+      /* 	printf("%c", km[i]); */
+      /* printf("\n"); */
+    }    
     
     /* step 2: derive the shared key from the label and the master key */
-    
-    /* YOUR CODE HERE */
+    char ks[32];
+    {
+      char ks0[20];
+      size_t len0 = strlen(label)+7;
+      char *label0 = (char*)malloc(len0);
+      strcpy(label0, label);
+      strcat(label0, "AES-CBC");
+      hmac_sha1(km, 20, ks0, label0, len0);
+      free(label0);
+
+      char ks1[20];
+      size_t len1 = strlen(label)+9;
+      char *label1 = (char*)malloc(len1);
+      strcpy(label1, label);
+      strcat(label1, "HMAC-SHA1");
+      hmac_sha1(km, 20, ks1, label1, len1);
+      free(label1);
+
+      strncpy(ks, ks0, 16);
+      strncpy(ks+16, ks1, 16);
+      /* printf("ks: "); */
+      /* for(i=0;i<32;i++) */
+      /* 	printf("%c",ks[i]); */
+      /* printf("\n"); */
+    }
     
     /* step 3: armor the shared key and write it to file.
        Filename should be of the form <label>-<priv_id>.b64 */
+    size_t fn_len = strlen(label)+1+strlen(priv_id)+1+strlen(pub_id)+4+1;
+    char *fn = (char*)malloc(fn_len);
+    strcpy(fn,label);
+    strcat(fn,"-");
+    strcat(fn,priv_id);
+    strcat(fn,"-");
+    strcat(fn,pub_id);
+    strcat(fn,".b64");
+    write_skfile(fn, ks, 32);
     
-    /* YOUR CODE HERE */
-    
-    /* DELETE FOLLOWING LINES WHEN YOU ARE DONE */
-    
-    printf ("NOT YET IMPLEMENTED.\n");
-    printf ("priv:\n%s\n", dcexport_priv (priv));
-    printf ("pub:\n%s\n", dcexport_pub (pub));
-    printf ("priv_id: %s\n", priv_id);
-    printf ("pub_id: %s\n", pub_id);
-    printf ("fst_id: %s\n", fst_id);
-    printf ("snd_id: %s\n", snd_id);
-    printf ("label: %s\n", label);
-    exit (-1);
+    /* printf ("Partial IMPLEMENTED.\n"); */
+    /* printf ("priv:\n%s\n", dcexport_priv (priv)); */
+    /* printf ("pub:\n%s\n", dcexport_pub (pub)); */
+    /* printf ("priv_id: %s\n", priv_id); */
+    /* printf ("pub_id: %s\n", pub_id); */
+    /* printf ("fst_id: %s\n", fst_id); */
+    /* printf ("snd_id: %s\n", snd_id); */
+    /* printf ("label: %s\n", label); */
+    /* exit (-1); */
   }
 }
 

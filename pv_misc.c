@@ -182,3 +182,49 @@ write_chunk (int fd, const char *buf, u_int len)
 
   return 0;
 }
+
+void
+write_skfile (const char *skfname, void *raw_sk, size_t raw_sklen)
+{
+  int fdsk = 0;
+  char *s = NULL;
+  int status = 0;
+
+  /* armor the raw symmetric key in raw_sk using armor64 */
+  s = armor64(raw_sk, raw_sklen); /* ensure bzero & free s (newly allocated) */
+
+  /* now let's write the armored symmetric key to skfname */
+
+  if ((fdsk = open (skfname, O_WRONLY|O_TRUNC|O_CREAT, 0600)) == -1) {
+    perror (getprogname ());
+
+    /* scrub the buffer that's holding the key before exiting */
+    bzero(s, strlen(s)); 	/* scrub armored sk */
+    free (s);
+    bzero(raw_sk, raw_sklen);	/* scrub original buffer */
+
+    exit (-1);
+  }
+  else {
+    status = write (fdsk, s, strlen (s));
+    if (status != -1) {
+      status = write (fdsk, "\n", 1);
+    }
+    bzero(s, strlen(s)); 	/* scrub armored sk */
+    free (s);
+    close (fdsk);
+    /* do not scrub the key buffer under normal circumstances
+       (it's up to the caller) */ 
+
+    if (status == -1) {
+      printf ("%s: trouble writing symmetric key to file %s\n", 
+	      getprogname (), skfname);
+      perror (getprogname ());
+      
+      /* scrub the buffer that's holding the key before exiting */
+      bzero(raw_sk, raw_sklen);	/* scrub original buffer */
+          
+      exit (-1);
+    }
+  }
+}

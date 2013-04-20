@@ -1,6 +1,6 @@
 # Compiler, flags, etc.
 CC = gcc
-DEBUG = -g -O2
+DEBUG = -O3 -DNDEBUG #-g -O2
 WFLAGS = -ansi -Wall -Wsign-compare -Wchar-subscripts -Werror
 LDFLAGS = -Wl,-rpath,/usr/lib
 
@@ -40,4 +40,20 @@ skgu_nidh : skgu_nidh.o skgu_cert.o skgu_misc.o pv_misc.o
 clean:
 	-rm -f core *.core *.o *~ 
 
-.PHONY: all clean
+cleanall: clean
+	-rm -rf al.* bo.* .pki *.b64
+
+dotest:
+	./skgu_pki init
+	./skgu_pki cert -g al.priv -o al.cert al.pub "al"
+	./skgu_pki cert -g bo.priv -o bo.cert bo.pub "bo"
+	./skgu_nidh al.priv al.cert "al" bo.pub bo.cert "bo" testlab
+	ls testlab*
+	cat testlab-al-bo.b64
+	./skgu_nidh bo.priv bo.cert "bo" al.pub al.cert "al" testlab
+	ls testlab*
+	cat testlab-bo-al.b64
+	diff testlab-al-bo.b64 testlab-bo-al.b64
+
+
+.PHONY: all clean cleanall dotest
